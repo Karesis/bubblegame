@@ -1,0 +1,1374 @@
+// DOM elements for game flow
+const menuBtn = document.getElementById('menu-btn');
+            
+// Additional event listeners
+menuBtn.addEventListener('click', returnToMainMenu);        .level-transition {
+position: fixed;
+top: 0;
+left: 0;
+width: 100%;
+height: 100%;
+background-color: rgba(255, 255, 255, 0);
+z-index: 150;
+display: flex;
+justify-content: center;
+align-items: center;
+opacity: 0;
+pointer-events: none;
+transition: all 0.5s ease;
+}
+
+.level-transition.active {
+background-color: rgba(255, 255, 255, 0.3);
+opacity: 1;
+}
+
+.level-transition-text {
+font-size: 48px;
+font-weight: bold;
+color: white;
+text-shadow: 0 0 10px rgba(0, 0, 0, 0.8);
+transform: scale(0);
+transition: transform 0.5s ease;
+}
+
+.level-transition.active .level-transition-text {
+transform: scale(1);
+}
+
+.about-screen {
+position: absolute;
+top: 0;
+left: 0;
+width: 100%;
+height: 100%;
+background-color: rgba(0, 0, 0, 0.85);
+display: flex;
+flex-direction: column;
+justify-content: center;
+align-items: center;
+z-index: 500;
+text-align: center;
+padding: 20px;
+}
+
+.about-content {
+background-color: rgba(255, 255, 255, 0.1);
+border-radius: 15px;
+padding: 30px;
+max-width: 80%;
+max-height: 70vh;
+overflow-y: auto;
+}
+
+.about-content h2 {
+color: #4caf50;
+margin-bottom: 20px;
+}
+
+.about-content p {
+margin-bottom: 15px;
+line-height: 1.5;
+text-align: left;
+}<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>气泡消除挑战</title>
+<style>
+* {
+margin: 0;
+padding: 0;
+box-sizing: border-box;
+-webkit-tap-highlight-color: transparent;
+}
+
+body {
+font-family: "Helvetica Neue", Arial, sans-serif;
+background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
+background-size: 600% 600%;
+animation: gradientBG 30s ease infinite;
+touch-action: manipulation;
+overflow: hidden;
+height: 100vh;
+color: white;
+}
+
+@keyframes gradientBG {
+0% { background-position: 0% 50% }
+50% { background-position: 100% 50% }
+100% { background-position: 0% 50% }
+}
+
+.container {
+position: relative;
+height: 100vh;
+overflow: hidden;
+}
+
+.game-header {
+position: absolute;
+top: 0;
+left: 0;
+right: 0;
+padding: 10px;
+background-color: rgba(0, 0, 0, 0.4);
+display: flex;
+justify-content: space-between;
+align-items: center;
+z-index: 100;
+}
+
+.score {
+font-size: 18px;
+font-weight: bold;
+}
+
+.level {
+font-size: 18px;
+font-weight: bold;
+}
+
+.time-bar {
+position: absolute;
+top: 45px;
+left: 0;
+height: 4px;
+background-color: #4caf50;
+width: 100%;
+z-index: 100;
+}
+
+.wave-indicator {
+display: flex;
+position: absolute;
+top: 12px;
+left: 50%;
+transform: translateX(-50%);
+z-index: 101;
+}
+
+.wave-dot {
+width: 10px;
+height: 10px;
+border-radius: 50%;
+background-color: rgba(255, 255, 255, 0.3);
+margin: 0 4px;
+}
+
+.wave-dot.active {
+background-color: #fff;
+box-shadow: 0 0 5px rgba(255, 255, 255, 0.8);
+}
+
+.progress-container {
+position: absolute;
+top: 50px;
+left: 0;
+right: 0;
+height: 6px;
+background-color: rgba(255, 255, 255, 0.2);
+z-index: 100;
+}
+
+.progress-bar {
+height: 100%;
+background-color: #ff9800;
+width: 0%;
+transition: width 0.3s ease;
+}
+
+.game-area {
+height: 100vh;
+width: 100vw;
+position: relative;
+overflow: hidden;
+}
+
+.bubble {
+position: absolute;
+border-radius: 50%;
+display: flex;
+align-items: center;
+justify-content: center;
+font-weight: bold;
+color: white;
+cursor: pointer;
+box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2), inset 0 0 10px rgba(255, 255, 255, 0.3);
+transform: translate(-50%, -50%);
+animation: float 3s infinite alternate ease-in-out;
+user-select: none;
+}
+
+@keyframes float {
+0% { transform: translate(-50%, -50%) translateY(0) scale(1) }
+50% { transform: translate(-50%, -50%) translateY(-5px) scale(1.02) }
+100% { transform: translate(-50%, -50%) translateY(-10px) scale(1) }
+}
+
+@keyframes pop {
+0% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+50% { transform: translate(-50%, -50%) scale(1.3); opacity: 0.7; }
+100% { transform: translate(-50%, -50%) scale(1.8); opacity: 0; }
+}
+
+@keyframes score-float {
+0% { transform: translateY(0); opacity: 1; }
+100% { transform: translateY(-30px); opacity: 0; }
+}
+
+@keyframes appear {
+0% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
+100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+}
+
+.score-popup {
+position: absolute;
+font-weight: bold;
+z-index: 110;
+pointer-events: none;
+animation: score-float 1s forwards;
+text-shadow: 0 0 3px rgba(0, 0, 0, 0.8);
+}
+
+.main-menu {
+position: absolute;
+top: 0;
+left: 0;
+width: 100%;
+height: 100%;
+background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
+background-size: 400% 400%;
+animation: gradientBG 15s ease infinite;
+display: flex;
+flex-direction: column;
+justify-content: center;
+align-items: center;
+z-index: 500;
+text-align: center;
+padding: 20px;
+}
+
+.game-logo {
+margin-bottom: 30px;
+position: relative;
+}
+
+.game-logo h1 {
+font-size: 42px;
+color: white;
+text-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+margin-bottom: 10px;
+}
+
+.game-logo p {
+font-size: 18px;
+color: rgba(255, 255, 255, 0.8);
+margin-bottom: 40px;
+}
+
+.decorative-bubble {
+position: absolute;
+border-radius: 50%;
+box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2), inset 0 0 10px rgba(255, 255, 255, 0.3);
+animation: float-around 8s infinite ease-in-out;
+z-index: -1;
+opacity: 0.8;
+}
+
+@keyframes float-around {
+0% { transform: translate(0, 0) rotate(0deg); }
+25% { transform: translate(20px, 15px) rotate(90deg); }
+50% { transform: translate(0, 30px) rotate(180deg); }
+75% { transform: translate(-20px, 15px) rotate(270deg); }
+100% { transform: translate(0, 0) rotate(360deg); }
+}
+
+.menu-buttons {
+display: flex;
+flex-direction: column;
+align-items: center;
+gap: 15px;
+margin-top: 20px;
+}
+
+.menu-btn {
+background-color: rgba(255, 255, 255, 0.2);
+border: 2px solid rgba(255, 255, 255, 0.4);
+color: white;
+padding: 15px 30px;
+min-width: 200px;
+text-align: center;
+text-decoration: none;
+display: inline-block;
+font-size: 18px;
+font-weight: bold;
+margin: 5px;
+cursor: pointer;
+border-radius: 30px;
+transition: all 0.3s ease;
+box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+}
+
+.menu-btn:hover {
+background-color: rgba(255, 255, 255, 0.3);
+transform: translateY(-3px);
+box-shadow: 0 6px 8px rgba(0, 0, 0, 0.3);
+}
+
+.menu-btn:active {
+transform: translateY(1px);
+box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.menu-btn.play {
+background-color: rgba(76, 175, 80, 0.7);
+border-color: rgba(76, 175, 80, 0.9);
+font-size: 22px;
+padding: 18px 40px;
+}
+
+.menu-btn.play:hover {
+background-color: rgba(76, 175, 80, 0.9);
+}
+
+.game-over, .level-complete, .game-start, .checkpoint {
+position: absolute;
+top: 0;
+left: 0;
+width: 100%;
+height: 100%;
+background-color: rgba(0, 0, 0, 0.85);
+display: flex;
+flex-direction: column;
+justify-content: center;
+align-items: center;
+z-index: 200;
+text-align: center;
+padding: 20px;
+}
+
+.game-start {
+background-color: rgba(0, 0, 0, 0.7);
+}
+
+.checkpoint-content {
+background-color: rgba(0, 0, 0, 0.7);
+padding: 30px;
+border-radius: 15px;
+border: 2px solid #4caf50;
+max-width: 80%;
+}
+
+.checkpoint h2 {
+font-size: 28px;
+margin-bottom: 10px;
+color: #4caf50;
+}
+
+.checkpoint-stats {
+margin: 15px 0;
+font-size: 18px;
+}
+
+.checkpoint-message {
+margin-bottom: 20px;
+font-size: 16px;
+}
+
+h1 {
+font-size: 32px;
+margin-bottom: 20px;
+color: white;
+}
+
+h2 {
+font-size: 24px;
+margin-bottom: 30px;
+color: white;
+}
+
+.btn {
+background-color: #4caf50;
+border: none;
+color: white;
+padding: 12px 24px;
+text-align: center;
+text-decoration: none;
+display: inline-block;
+font-size: 18px;
+margin: 10px 5px;
+cursor: pointer;
+border-radius: 30px;
+transition: all 0.3s ease;
+box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+font-weight: bold;
+}
+
+.btn:hover {
+background-color: #3e8e41;
+transform: translateY(-2px);
+box-shadow: 0 6px 8px rgba(0, 0, 0, 0.3);
+}
+
+.btn:active {
+transform: translateY(1px);
+box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.pulse {
+animation: pulse 0.5s linear;
+}
+
+@keyframes pulse {
+0% { transform: scale(1); }
+50% { transform: scale(1.1); }
+100% { transform: scale(1); }
+}
+
+.achievement {
+position: fixed;
+bottom: 20px;
+left: 50%;
+transform: translateX(-50%);
+background-color: rgba(0, 0, 0, 0.7);
+color: white;
+padding: 10px 20px;
+border-radius: 20px;
+font-size: 16px;
+opacity: 0;
+transition: opacity 0.3s;
+z-index: 300;
+}
+
+.show-achievement {
+opacity: 1;
+animation: slide-up 2s forwards;
+}
+
+@keyframes slide-up {
+0% { transform: translateX(-50%) translateY(20px); opacity: 0; }
+10% { transform: translateX(-50%) translateY(0); opacity: 1; }
+90% { transform: translateX(-50%) translateY(0); opacity: 1; }
+100% { transform: translateX(-50%) translateY(-20px); opacity: 0; }
+}
+
+.tutorial {
+background-color: rgba(0, 0, 0, 0.7);
+padding: 15px;
+border-radius: 10px;
+margin-bottom: 20px;
+max-width: 90%;
+}
+
+.tutorial p {
+margin-bottom: 10px;
+font-size: 16px;
+line-height: 1.5;
+}
+</style>
+</head>
+<body>
+<div class="container">
+<div class="main-menu" id="main-menu">
+<div class="game-logo">
+    <h1>气泡消除挑战</h1>
+    <p>点击相同颜色的气泡，获得更高分数！</p>
+    <!-- Decorative bubbles -->
+    <div class="decorative-bubble" style="width: 60px; height: 60px; background-color: #FF5252; top: -80px; left: -30px;"></div>
+    <div class="decorative-bubble" style="width: 45px; height: 45px; background-color: #4CAF50; top: -60px; right: -40px;"></div>
+    <div class="decorative-bubble" style="width: 50px; height: 50px; background-color: #2196F3; bottom: -70px; left: 20px;"></div>
+    <div class="decorative-bubble" style="width: 40px; height: 40px; background-color: #FFC107; bottom: -50px; right: 10px;"></div>
+</div>
+<div class="menu-buttons">
+    <button class="menu-btn play" id="play-btn">开始游戏</button>
+    <button class="menu-btn" id="about-btn">游戏说明</button>
+</div>
+</div>
+
+<div class="about-screen" id="about-screen" style="display:none;">
+<div class="about-content">
+    <h2>游戏说明</h2>
+    <p><strong>游戏目标：</strong>点击气泡获得分数，达到每波次的目标分数，完成所有关卡。</p>
+    <p><strong>游戏规则：</strong></p>
+    <p>1. 点击相同颜色的气泡可获得连击奖励</p>
+    <p>2. 切换颜色会受到分数惩罚（失去50%基础分值）</p>
+    <p>3. 每个关卡分为3个波次，每波次有目标分数</p>
+    <p>4. 达到波次目标后会到达检查点，可以休息</p>
+    <p>5. 完成所有波次后进入下一关卡</p>
+    <p>6. 时间结束前未能达到目标分数则游戏结束</p>
+    <p><strong>成就系统：</strong>游戏中隐藏了多种成就等待你解锁！</p>
+    <button class="btn" id="back-btn">返回主菜单</button>
+</div>
+</div>
+
+<div class="game-header">
+<div class="score">得分: <span id="score">0</span></div>
+<div class="level">关卡: <span id="level">1</span>-<span id="wave">1</span></div>
+<div class="wave-indicator" id="wave-indicator"></div>
+</div>
+<div class="time-bar" id="time-bar"></div>
+<div class="progress-container">
+<div class="progress-bar" id="progress-bar"></div>
+</div>
+<div class="game-area" id="game-area"></div>
+
+<div class="game-start" id="game-start" style="display:none;">
+<h1>气泡消除挑战</h1>
+<div class="tutorial">
+    <p>游戏规则：</p>
+    <p>1. 点击相同颜色的气泡可获得连击奖励</p>
+    <p>2. 切换颜色会受到分数惩罚</p>
+    <p>3. 每个关卡分为3个波次，每波次有目标分数</p>
+    <p>4. 达到波次目标后会到达检查点，可以休息</p>
+    <p>5. 完成所有波次后进入下一关卡</p>
+    <p>6. 在时间结束前达到目标分数</p>
+</div>
+<button class="btn" id="start-btn">开始游戏</button>
+</div>
+
+<div class="level-complete" id="level-complete" style="display:none;">
+<h1>恭喜通关！</h1>
+<h2>得分: <span id="level-score">0</span></h2>
+<button class="btn" id="next-level-btn">下一关</button>
+</div>
+
+<div class="game-over" id="game-over" style="display:none;">
+<h1>游戏结束</h1>
+<h2>最终得分: <span id="final-score">0</span></h2>
+<h2>达到关卡: <span id="final-level">1</span>-<span id="final-wave">1</span></h2>
+<div style="display: flex; gap: 15px;">
+    <button class="btn" id="restart-btn">重新开始</button>
+    <button class="btn" id="menu-btn">返回主菜单</button>
+</div>
+</div>
+
+<div class="checkpoint" id="checkpoint" style="display:none;">
+<div class="checkpoint-content">
+    <h2>检查点已达成！</h2>
+    <div class="checkpoint-stats">
+        <p>关卡: <span id="checkpoint-level">1</span> 波次: <span id="checkpoint-wave">1</span>/3</p>
+        <p>得分: <span id="checkpoint-score">0</span></p>
+        <p>剩余时间: <span id="checkpoint-time">0</span>秒</p>
+    </div>
+    <div class="checkpoint-message">
+        <p>休息一下，继续挑战下一波次</p>
+    </div>
+    <button class="btn" id="continue-btn">继续游戏</button>
+</div>
+</div>
+
+<div class="level-transition" id="level-transition">
+<div class="level-transition-text" id="level-transition-text">Level 2</div>
+</div>
+
+<div class="achievement" id="achievement"></div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+// Game variables
+let score = 0;
+let level = 1;
+let wave = 1;
+let maxWavesPerLevel = 3;
+let waveTargetScore = 0;
+let levelTargetScore = 100;
+let timeLeft = 30;
+let gameInterval;
+let timeInterval;
+let bubblesOnScreen = 0;
+let maxBubbles = 12;
+let isGameRunning = false;
+let isPaused = false;
+let bubbleSpeed = 1;
+let bubblePoints = 10;
+let comboCounter = 0;
+let lastBubbleColor = '';
+let bubblePositions = []; // Track bubble positions for better distribution
+let lastBubbleCreationTime = 0;
+
+// DOM elements
+const gameArea = document.getElementById('game-area');
+const scoreElement = document.getElementById('score');
+const levelElement = document.getElementById('level');
+const waveElement = document.getElementById('wave');
+const timeBar = document.getElementById('time-bar');
+const progressBar = document.getElementById('progress-bar');
+const mainMenuScreen = document.getElementById('main-menu');
+const gameStartScreen = document.getElementById('game-start');
+const levelCompleteScreen = document.getElementById('level-complete');
+const gameOverScreen = document.getElementById('game-over');
+const checkpointScreen = document.getElementById('checkpoint');
+const aboutScreen = document.getElementById('about-screen');
+const waveIndicator = document.getElementById('wave-indicator');
+const startBtn = document.getElementById('start-btn');
+const playBtn = document.getElementById('play-btn');
+const aboutBtn = document.getElementById('about-btn');
+const backBtn = document.getElementById('back-btn');
+const nextLevelBtn = document.getElementById('next-level-btn');
+const restartBtn = document.getElementById('restart-btn');
+const continueBtn = document.getElementById('continue-btn');
+const levelScoreElement = document.getElementById('level-score');
+const finalScoreElement = document.getElementById('final-score');
+const finalLevelElement = document.getElementById('final-level');
+const finalWaveElement = document.getElementById('final-wave');
+const achievementElement = document.getElementById('achievement');
+const levelTransition = document.getElementById('level-transition');
+const levelTransitionText = document.getElementById('level-transition-text');
+const checkpointLevelElement = document.getElementById('checkpoint-level');
+const checkpointWaveElement = document.getElementById('checkpoint-wave');
+const checkpointScoreElement = document.getElementById('checkpoint-score');
+const checkpointTimeElement = document.getElementById('checkpoint-time');
+
+// Colors for bubbles
+const colors = [
+    { bg: '#FF5252', text: '#fff' }, // red
+    { bg: '#4CAF50', text: '#fff' }, // green
+    { bg: '#2196F3', text: '#fff' }, // blue
+    { bg: '#FFC107', text: '#000' }, // yellow
+    { bg: '#9C27B0', text: '#fff' }, // purple
+    { bg: '#FF9800', text: '#000' }, // orange
+    { bg: '#00BCD4', text: '#fff' }  // cyan
+];
+
+// Achievements
+let achievements = {
+    'combo3': { earned: false, text: '成就解锁：连击大师（3连击）' },
+    'combo5': { earned: false, text: '成就解锁：连击王者（5连击）' },
+    'score100': { earned: false, text: '成就解锁：初级收集者（100分）' },
+    'score500': { earned: false, text: '成就解锁：高级收集者（500分）' },
+    'score1000': { earned: false, text: '成就解锁：气泡猎人（1000分）' },
+    'level3': { earned: false, text: '成就解锁：坚持不懈（达到3关）' },
+    'level5': { earned: false, text: '成就解锁：气泡大师（达到5关）' }
+};
+
+// Event listeners
+startBtn.addEventListener('click', startGame);
+playBtn.addEventListener('click', showGameStart);
+aboutBtn.addEventListener('click', showAbout);
+backBtn.addEventListener('click', hideAbout);
+nextLevelBtn.addEventListener('click', nextLevel);
+restartBtn.addEventListener('click', restartGame);
+continueBtn.addEventListener('click', continueFromCheckpoint);
+
+// Prevent default touch behavior
+document.addEventListener('touchmove', function(e) {
+    if (isGameRunning) {
+        e.preventDefault();
+    }
+}, { passive: false });
+
+// Function to show game start screen from main menu
+function showGameStart() {
+    mainMenuScreen.style.display = 'none';
+    gameStartScreen.style.display = 'flex';
+}
+
+// Function to show about screen
+function showAbout() {
+    aboutScreen.style.display = 'flex';
+}
+
+// Function to hide about screen
+function hideAbout() {
+    aboutScreen.style.display = 'none';
+}
+
+// Function to initialize wave indicators
+function initWaveIndicators() {
+    // Clear existing indicators
+    waveIndicator.innerHTML = '';
+    
+    // Add dots for each wave
+    for (let i = 0; i < maxWavesPerLevel; i++) {
+        const dot = document.createElement('div');
+        dot.className = 'wave-dot';
+        if (i === wave - 1) {
+            dot.classList.add('active');
+        }
+        waveIndicator.appendChild(dot);
+    }
+}
+
+// Function to update wave indicators
+function updateWaveIndicator() {
+    const dots = waveIndicator.querySelectorAll('.wave-dot');
+    dots.forEach((dot, index) => {
+        if (index === wave - 1) {
+            dot.classList.add('active');
+        } else {
+            dot.classList.remove('active');
+        }
+    });
+}
+
+// Function to calculate wave target score
+function calculateWaveTarget() {
+    // Each wave contributes equally to the level target
+    waveTargetScore = Math.round(levelTargetScore / maxWavesPerLevel);
+}
+
+// Function to start the game
+function startGame() {
+    resetGame();
+    gameStartScreen.style.display = 'none';
+    isGameRunning = true;
+    initWaveIndicators();
+    calculateWaveTarget();
+    updateProgressBar();
+    startGameLoop();
+    startTimer();
+}
+
+// Function to move to the next level
+function nextLevel() {
+    // First ensure we clear any existing timers
+    clearInterval(gameInterval);
+    clearInterval(timeInterval);
+    
+    level++;
+    wave = 1;
+    levelElement.innerText = level;
+    waveElement.innerText = wave;
+    
+    // Reset game state flags
+    isPaused = false;
+    isGameRunning = true;
+    
+    // Increase difficulty but with better scaling
+    timeLeft = 30;
+    bubbleSpeed += 0.2;
+    bubblePoints += 5;
+    maxBubbles = Math.min(15, 10 + Math.floor(level/2));
+    levelTargetScore = 100 * level * (1 + 0.2 * (level - 1)); // Non-linear scaling
+    levelTargetScore = Math.round(levelTargetScore / 10) * 10; // Round to nearest 10
+    
+    // Calculate wave target for the new level
+    calculateWaveTarget();
+    
+    // Reset progression
+    score = 0;
+    scoreElement.innerText = 0;
+    
+    // Hide level complete screen
+    levelCompleteScreen.style.display = 'none';
+    
+    // Clear existing bubbles
+    clearBubbles();
+    bubblePositions = [];
+    
+    // Update wave indicators for the new level
+    initWaveIndicators();
+    
+    // Update progress bar
+    updateProgressBar();
+    
+    // Show level transition animation
+    levelTransitionText.textContent = `关卡 ${level}`;
+    levelTransition.classList.add('active');
+    
+    // Wait for transition animation to complete before starting gameplay
+    setTimeout(() => {
+        levelTransition.classList.remove('active');
+        
+        // Check for level achievements
+        checkAchievement('level3', level >= 3);
+        checkAchievement('level5', level >= 5);
+        
+        // Start game loop and timer after transition completes
+        startGameLoop();
+        startTimer();
+    }, 1500);
+}
+
+// Function to restart the game
+function restartGame() {
+    gameOverScreen.style.display = 'none';
+    resetGame();
+    initWaveIndicators();
+    startGameLoop();
+    startTimer();
+}
+
+// Function to go back to main menu after game over
+function returnToMainMenu() {
+    gameOverScreen.style.display = 'none';
+    levelCompleteScreen.style.display = 'none';
+    mainMenuScreen.style.display = 'flex';
+    resetGame();
+}
+
+// Function to reset the game state
+function resetGame() {
+    score = 0;
+    level = 1;
+    wave = 1;
+    maxWavesPerLevel = 3;
+    timeLeft = 30;
+    bubbleSpeed = 1;
+    bubblePoints = 10;
+    maxBubbles = 12;
+    levelTargetScore = 100;
+    isPaused = false;
+    comboCounter = 0;
+    lastBubbleColor = '';
+    bubblePositions = [];
+    
+    scoreElement.innerText = score;
+    levelElement.innerText = level;
+    waveElement.innerText = wave;
+    
+    // Calculate wave target
+    calculateWaveTarget();
+    
+    // Reset achievements for a new game
+    for (let key in achievements) {
+        achievements[key].earned = false;
+    }
+    
+    clearBubbles();
+    isGameRunning = true;
+}
+
+// Function to move to next wave within the same level
+function nextWave() {
+    wave++;
+    waveElement.innerText = wave;
+    
+    // Update wave indicator
+    updateWaveIndicator();
+    
+    // Reset score for the new wave
+    score = 0;
+    scoreElement.innerText = 0;
+    
+    // Reset time for the new wave
+    timeLeft = 30;
+    
+    // Clear bubbles
+    clearBubbles();
+    bubblePositions = [];
+    
+    // Resume game after checkpoint
+    isPaused = false;
+    updateProgressBar();
+    startGameLoop();
+    startTimer();
+}
+
+// Function to continue from checkpoint
+function continueFromCheckpoint() {
+    checkpointScreen.style.display = 'none';
+    nextWave();
+}
+
+// Function to show checkpoint screen
+function showCheckpoint() {
+    isPaused = true;
+    clearInterval(gameInterval);
+    clearInterval(timeInterval);
+    
+    // Update checkpoint information
+    checkpointLevelElement.textContent = level;
+    checkpointWaveElement.textContent = wave;
+    checkpointScoreElement.textContent = score;
+    checkpointTimeElement.textContent = Math.round(timeLeft);
+    
+    // Show checkpoint screen
+    checkpointScreen.style.display = 'flex';
+}
+
+// Function to clear all bubbles from the screen
+function clearBubbles() {
+    const bubbles = document.querySelectorAll('.bubble');
+    
+    // Animate bubble removal instead of instant disappearance
+    bubbles.forEach((bubble, index) => {
+        setTimeout(() => {
+            bubble.style.animation = 'pop 0.3s forwards';
+            setTimeout(() => bubble.remove(), 300);
+        }, index * 30); // Staggered removal
+    });
+    
+    bubblesOnScreen = 0;
+    bubblePositions = [];
+}
+
+// Main game loop
+function startGameLoop() {
+    clearInterval(gameInterval);
+    gameInterval = setInterval(() => {
+        // Skip if game is paused
+        if (isPaused) return;
+        
+        // Always try to maintain a minimum number of bubbles (at least maxBubbles/2)
+        const minBubbles = Math.floor(maxBubbles / 2);
+        
+        // Add bubbles if we're below maximum
+        if (bubblesOnScreen < maxBubbles) {
+            // Higher chance to spawn bubbles when count is low
+            const spawnChance = bubblesOnScreen < minBubbles ? 0.9 : 0.7;
+            
+            if (Math.random() < spawnChance) {
+                createBubble();
+            }
+        }
+        
+        // Move existing bubbles
+        const bubbles = document.querySelectorAll('.bubble');
+        bubbles.forEach(bubble => {
+            moveBubble(bubble);
+        });
+        
+    // Adjust bubble creation frequency based on level but with a reasonable minimum
+    }, Math.max(200, 800 / Math.sqrt(level)));
+}
+
+// Timer function
+function startTimer() {
+    clearInterval(timeInterval);
+    timeBar.style.width = '100%';
+    
+    timeInterval = setInterval(() => {
+        // Skip if game is paused
+        if (isPaused) return;
+        
+        timeLeft -= 0.1;
+        const percentage = (timeLeft / 30) * 100;
+        timeBar.style.width = `${percentage}%`;
+        
+        // Change color as time decreases
+        if (percentage > 60) {
+            timeBar.style.backgroundColor = '#4caf50'; // green
+        } else if (percentage > 30) {
+            timeBar.style.backgroundColor = '#ffc107'; // yellow
+        } else {
+            timeBar.style.backgroundColor = '#f44336'; // red
+        }
+        
+        // Check if we need to force bubble generation
+        ensureBubbleGeneration();
+        
+        if (timeLeft <= 0) {
+            endGame();
+        }
+    }, 100);
+}
+
+// Function to ensure bubble generation if needed
+function ensureBubbleGeneration() {
+    const currentTime = Date.now();
+    
+    // If no bubbles have been created for 3 seconds and we're below minimum count
+    if (currentTime - lastBubbleCreationTime > 3000 && 
+        bubblesOnScreen < Math.floor(maxBubbles / 2) && 
+        isGameRunning && !isPaused) {
+        
+        // Force bubble creation - ensure we have at least a few bubbles
+        for (let i = 0; i < 3; i++) {
+            createBubble();
+        }
+        lastBubbleCreationTime = currentTime;
+        console.log("Forced bubble generation due to inactivity");
+    }
+}
+
+// Function to create a bubble
+function createBubble() {
+    // Skip if game is paused or not running
+    if (isPaused || !isGameRunning) {
+        return;
+    }
+    
+    // Update timestamp for bubble creation monitoring
+    lastBubbleCreationTime = Date.now();
+    
+    const bubble = document.createElement('div');
+    bubble.className = 'bubble';
+    
+    // Random size between 40 and 80 pixels
+    const size = Math.floor(Math.random() * 40) + 40;
+    bubble.style.width = `${size}px`;
+    bubble.style.height = `${size}px`;
+    
+    // Find a good position that doesn't overlap too much with existing bubbles
+    let attempts = 0;
+    let x, y;
+    let goodPosition = false;
+    
+    while (!goodPosition && attempts < 10) {
+        x = Math.random() * (window.innerWidth - 40) + 20;
+        y = Math.random() * (window.innerHeight - 150) + 70;
+        
+        // Check distance from other bubbles
+        goodPosition = true;
+        for (let pos of bubblePositions) {
+            const distance = Math.sqrt(Math.pow(x - pos.x, 2) + Math.pow(y - pos.y, 2));
+            if (distance < 80) { // Minimum distance between bubbles
+                goodPosition = false;
+                break;
+            }
+        }
+        
+        attempts++;
+    }
+    
+    // Store this bubble's position
+    bubblePositions.push({x, y});
+    
+    bubble.style.left = `${x}px`;
+    bubble.style.top = `${y}px`;
+    
+    // Random color - with a bias towards creating more of the current combo color
+    let colorIndex;
+    if (lastBubbleColor !== '' && Math.random() < 0.4) {
+        // 40% chance to create a bubble of the same color as the last popped
+        colorIndex = colors.findIndex(color => color.bg === lastBubbleColor);
+        if (colorIndex === -1) colorIndex = Math.floor(Math.random() * colors.length);
+    } else {
+        colorIndex = Math.floor(Math.random() * colors.length);
+    }
+    
+    bubble.style.backgroundColor = colors[colorIndex].bg;
+    bubble.style.color = colors[colorIndex].text;
+    bubble.dataset.color = colors[colorIndex].bg;
+    
+    // Points value based on size (smaller bubbles = more points)
+    const points = Math.floor(bubblePoints * (1 + (80 - size) / 40));
+    bubble.dataset.points = points;
+    bubble.textContent = points;
+    
+    // Random direction with controlled speed
+    bubble.dataset.dx = (Math.random() - 0.5) * 2 * bubbleSpeed;
+    bubble.dataset.dy = (Math.random() - 0.5) * 2 * bubbleSpeed;
+    
+    // Animation
+    bubble.style.animation = `appear 0.3s forwards, float ${3 + Math.random() * 2}s infinite alternate ease-in-out`;
+    
+    // Click/tap event handler
+    bubble.addEventListener('click', handleBubblePop);
+    bubble.addEventListener('touchstart', handleBubblePop, { passive: true });
+    
+    gameArea.appendChild(bubble);
+    bubblesOnScreen++;
+}
+
+// Function to move a bubble
+function moveBubble(bubble) {
+    const rect = bubble.getBoundingClientRect();
+    let x = rect.left + rect.width / 2;
+    let y = rect.top + rect.height / 2;
+    
+    // Get current movement values
+    let dx = parseFloat(bubble.dataset.dx);
+    let dy = parseFloat(bubble.dataset.dy);
+    
+    // Add some organic movement with sine waves
+    // Use the bubble's unique position and time to create varied movements
+    if (!bubble.dataset.uniqueId) {
+        bubble.dataset.uniqueId = Date.now() + Math.random();
+        bubble.dataset.sineOffset = Math.random() * Math.PI * 2;
+        bubble.dataset.sineFrequency = 0.005 + Math.random() * 0.01;
+        bubble.dataset.sineAmplitude = 0.2 + Math.random() * 0.3;
+    }
+    
+    const uniqueId = parseFloat(bubble.dataset.uniqueId);
+    const sineOffset = parseFloat(bubble.dataset.sineOffset);
+    const sineFrequency = parseFloat(bubble.dataset.sineFrequency);
+    const sineAmplitude = parseFloat(bubble.dataset.sineAmplitude);
+    
+    // Apply sine wave movement for more organic motion
+    const time = Date.now() * 0.001; // Convert to seconds
+    const sineFactorX = Math.sin(time * sineFrequency + sineOffset) * sineAmplitude;
+    const sineFactorY = Math.cos(time * sineFrequency + sineOffset + Math.PI/2) * sineAmplitude;
+    
+    // Add sine factor to movement
+    dx += sineFactorX * 0.1;
+    dy += sineFactorY * 0.1;
+    
+    // Apply gentle drag/friction to prevent excessive speed
+    dx *= 0.98;
+    dy *= 0.98;
+    
+    // Bounce off walls with organic behavior
+    if (x <= 0 || x >= window.innerWidth) {
+        // Absorb some energy on collision
+        dx = -dx * 0.9;
+        // Add some slight vertical movement on horizontal collision
+        dy += (Math.random() - 0.5) * 0.5;
+    }
+    
+    if (y <= 50 || y >= window.innerHeight) {
+        // Absorb some energy on collision
+        dy = -dy * 0.9;
+        // Add some slight horizontal movement on vertical collision
+        dx += (Math.random() - 0.5) * 0.5;
+    }
+    
+    // Ensure bubbles don't slow down too much
+    const speed = Math.sqrt(dx*dx + dy*dy);
+    const minSpeed = 0.1 * bubbleSpeed;
+    if (speed < minSpeed) {
+        const factor = minSpeed / (speed || 0.1); // Avoid division by zero
+        dx *= factor;
+        dy *= factor;
+    }
+    
+    // Update position
+    x += dx;
+    y += dy;
+    
+    // Store updated velocities
+    bubble.dataset.dx = dx;
+    bubble.dataset.dy = dy;
+    
+    // Update this bubble's position in our tracking array
+    const id = Array.from(gameArea.querySelectorAll('.bubble')).indexOf(bubble);
+    if (id >= 0 && id < bubblePositions.length) {
+        bubblePositions[id] = {x, y};
+    }
+    
+    bubble.style.left = `${x}px`;
+    bubble.style.top = `${y}px`;
+}
+
+// Function to handle bubble pop
+function handleBubblePop(e) {
+    e.preventDefault();
+    const bubble = e.target;
+    const points = parseInt(bubble.dataset.points);
+    const bubbleColor = bubble.dataset.color;
+    
+    let finalPoints = points;
+    
+    // Record bubble creation activity
+    lastBubbleCreationTime = Date.now();
+    
+    // Check for combo (same color in sequence)
+    if (bubbleColor === lastBubbleColor) {
+        comboCounter++;
+        if (comboCounter >= 2) {
+            // More balanced bonus points calculation
+            // Using logarithmic scaling to prevent excessive rewards at high combo counts
+            const comboMultiplier = Math.min(3, 1 + Math.log10(comboCounter) / 2);
+            const bonusPoints = Math.round(points * (comboMultiplier - 1));
+            finalPoints += bonusPoints;
+            
+            // Show combo message
+            showAchievement(`连击 x${comboCounter}！奖励 ${bonusPoints} 分`, false);
+            
+            // Check for combo achievements
+            checkAchievement('combo3', comboCounter >= 3);
+            checkAchievement('combo5', comboCounter >= 5);
+        }
+    } else {
+        // Apply penalty for color switching if not the first bubble
+        if (lastBubbleColor !== '') {
+            const penalty = Math.floor(points * 0.5);
+            finalPoints -= penalty;
+            
+            // Ensure points don't go negative for a single bubble
+            finalPoints = Math.max(1, finalPoints);
+            
+            // Show penalty message
+            showAchievement(`颜色切换！失去 ${penalty} 分`, false);
+        }
+        
+        // Reset combo counter
+        comboCounter = 1;
+    }
+    
+    // Add final points to score
+    score += finalPoints;
+    scoreElement.innerText = score;
+    
+    // Update the bubble text to show actual points gained
+    bubble.textContent = finalPoints > 0 ? `+${finalPoints}` : finalPoints;
+    
+    lastBubbleColor = bubbleColor;
+    
+    // Create score popup at bubble position
+    const rect = bubble.getBoundingClientRect();
+    const scorePopup = document.createElement('div');
+    scorePopup.className = 'score-popup';
+    scorePopup.style.left = `${rect.left + rect.width/2}px`;
+    scorePopup.style.top = `${rect.top}px`;
+    
+    // Color the score popup based on points (positive/negative)
+    if (finalPoints > 0) {
+        scorePopup.style.color = finalPoints > points ? '#FFEB3B' : 'white'; // Yellow for bonus
+        scorePopup.textContent = `+${finalPoints}`;
+    } else {
+        scorePopup.style.color = '#FF5252';
+        scorePopup.textContent = finalPoints;
+    }
+    
+    // Add to DOM
+    document.body.appendChild(scorePopup);
+    
+    // Remove after animation
+    setTimeout(() => {
+        scorePopup.remove();
+    }, 1000);
+    
+    // Animate pop effect with more visual feedback
+    bubble.style.animation = 'pop 0.5s forwards';
+    
+    // Add ripple effect at bubble position
+    const ripple = document.createElement('div');
+    ripple.className = 'bubble';
+    ripple.style.backgroundColor = 'rgba(255, 255, 255, 0.3)';
+    ripple.style.width = `${parseFloat(bubble.style.width) * 1.5}px`;
+    ripple.style.height = `${parseFloat(bubble.style.height) * 1.5}px`;
+    ripple.style.left = bubble.style.left;
+    ripple.style.top = bubble.style.top;
+    ripple.style.animation = 'pop 0.4s forwards';
+    ripple.style.pointerEvents = 'none';
+    gameArea.appendChild(ripple);
+    
+    // Remove bubble and update tracking
+    setTimeout(() => {
+        // Find bubble's position in our tracking array and remove it
+        const id = bubblePositions.findIndex(pos => {
+            const bx = parseFloat(bubble.style.left.replace('px', ''));
+            const by = parseFloat(bubble.style.top.replace('px', ''));
+            return Math.abs(pos.x - bx) < 5 && Math.abs(pos.y - by) < 5;
+        });
+        
+        if (id !== -1) {
+            bubblePositions.splice(id, 1);
+        }
+        
+        bubble.remove();
+        bubblesOnScreen--;
+        ripple.remove();
+    }, 500);
+    
+    // Check for score achievements
+    checkAchievement('score100', score >= 100);
+    checkAchievement('score500', score >= 500);
+    checkAchievement('score1000', score >= 1000);
+    
+    // Update progress bar
+    updateProgressBar();
+    
+    // Check if wave target score is reached
+    if (score >= waveTargetScore) {
+        // If this is the last wave in the level
+        if (wave >= maxWavesPerLevel) {
+            completeLevel();
+        } else {
+            // If this is not the last wave, show checkpoint
+            showCheckpoint();
+        }
+    }
+    
+    // Animate score
+    scoreElement.classList.add('pulse');
+    setTimeout(() => {
+        scoreElement.classList.remove('pulse');
+    }, 500);
+}
+
+// Function to update progress bar
+function updateProgressBar() {
+    const progress = Math.min(100, (score / waveTargetScore) * 100);
+    progressBar.style.width = `${progress}%`;
+    
+    // Change color as progress increases
+    if (progress < 30) {
+        progressBar.style.backgroundColor = '#ff9800';
+    } else if (progress < 70) {
+        progressBar.style.backgroundColor = '#ffeb3b';
+    } else {
+        progressBar.style.backgroundColor = '#4caf50';
+    }
+}
+
+// Function to complete a level
+function completeLevel() {
+    isGameRunning = false;
+    isPaused = true;
+    
+    // Ensure all timers are stopped
+    clearInterval(gameInterval);
+    clearInterval(timeInterval);
+    
+    // Ensure all bubbles stop moving
+    const bubbles = document.querySelectorAll('.bubble');
+    bubbles.forEach(bubble => {
+        bubble.dataset.dx = 0;
+        bubble.dataset.dy = 0;
+    });
+    
+    // Display level complete screen
+    levelCompleteScreen.style.display = 'flex';
+    levelScoreElement.innerText = score;
+}
+
+// Function to end the game
+function endGame() {
+    isGameRunning = false;
+    isPaused = true;
+    clearInterval(gameInterval);
+    clearInterval(timeInterval);
+    
+    // Display game over screen
+    gameOverScreen.style.display = 'flex';
+    finalScoreElement.innerText = score;
+    finalLevelElement.innerText = level;
+    finalWaveElement.innerText = wave;
+}
+
+// Function to check and award achievements
+function checkAchievement(key, condition) {
+    if (!achievements[key].earned && condition) {
+        achievements[key].earned = true;
+        showAchievement(achievements[key].text, true);
+    }
+}
+
+// Function to show achievement notification
+function showAchievement(text, isAchievement) {
+    achievementElement.textContent = text;
+    achievementElement.classList.add('show-achievement');
+    
+    // Special styling for real achievements
+    if (isAchievement) {
+        achievementElement.style.backgroundColor = 'rgba(255, 215, 0, 0.7)';
+        achievementElement.style.color = 'black';
+    } else {
+        achievementElement.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+        achievementElement.style.color = 'white';
+    }
+    
+    // Hide after animation
+    setTimeout(() => {
+        achievementElement.classList.remove('show-achievement');
+    }, 2000);
+}
+
+// Adjust for window resize
+window.addEventListener('resize', () => {
+    // Keep bubbles within bounds after resize
+    const bubbles = document.querySelectorAll('.bubble');
+    bubbles.forEach(bubble => {
+        const rect = bubble.getBoundingClientRect();
+        let x = rect.left + rect.width / 2;
+        let y = rect.top + rect.height / 2;
+        
+        if (x > window.innerWidth - 20) x = window.innerWidth - 20;
+        if (x < 20) x = 20;
+        if (y > window.innerHeight - 20) y = window.innerHeight - 20;
+        if (y < 60) y = 60;
+        
+        bubble.style.left = `${x}px`;
+        bubble.style.top = `${y}px`;
+    });
+});
+});
+</script>
+</body>
+</html>
